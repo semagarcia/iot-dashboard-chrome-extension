@@ -4,8 +4,16 @@
   "description": "Chrome extension for IoT Sema Platform",
   "version": "1.0",
   "browser_action": {
-    "default_popup": "index.html"
+    "default_popup": "./src/popup/popup.html"
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["js/jquery-3.2.1.slim.min.js", "src/popup/popup.js"],
+      "css": [],
+      "run_at": "document_end"
+    }
+  ],
   "permissions": [
     "activeTab"
   ],
