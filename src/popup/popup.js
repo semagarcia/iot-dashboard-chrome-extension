@@ -1,34 +1,101 @@
+var playerOptionsMenuOpened = false;
+var isPlaying = false;
+
 $(document).ready(() => {
     console.log('Ready!');
+    var server = localStorage.getItem('store.settings.server');
+    server = server.slice(1, -1);
 
-    $('#speaker').mouseenter((e) => { 
-        console.log(e); 
-        $('body').append(`
-            <div id="player-options" 
-                style="
-                    flex-direction:row;
-                    width:300px; 
-                    height:50px; 
-                    z-index:9999; 
-                    border:1px solid black; 
-                    position:absolute; 
-                    top:50px; 
-                    right:30px;
-                    background-color:white;
-                ">
-                    <div style="flex-grow:1">XXX</div>
-                    <div style="flex-grow:1">XXX</div>
-                    <div style="flex-grow:1">XXX</div>
-            </div>`);
+    console.log('>> ' + chrome.runtime.id);
+
+    fetch(`${server}/http-stream`)
+        .then((response) => {
+            let streamChunkExtractor = (reader) => {
+                return reader.read().then((result) => {
+                    if(result.done) {
+                        return;
+                    }
+
+                    let chunk = result.value;
+                    let streamChunk = '';
+                    for(let i=0; i<chunk.byteLength; i++) {
+                        streamChunk += String.fromCharCode(chunk[i]);
+                    }
+
+                    updateDashboard(JSON.parse(streamChunk));
+                    return streamChunkExtractor(reader);
+                });
+            };
+            return streamChunkExtractor(response.body.getReader());
+        })
+        .catch((err) => {
+            console.log('err: ', err);
+        });
+
+    updateDashboard = (backendInfo) => {
+        $('#light-label').text(backendInfo.sensors.light);
+        $('#temp-label').text(backendInfo.sensors.temperature);
+    };
+
+    $('#settings').click(() => {
+        chrome.runtime.openOptionsPage();
+    })
+    
+    document.querySelector('#settings').addEventListener(function() {
+        if (chrome.runtime.openOptionsPage) {
+            chrome.runtime.openOptionsPage();  // supported in Chrome 42+
+        } else {
+            window.open(chrome.runtime.getURL('src/options/index.html'));  // Reasonable fallback.
+        }
+    }, false);
+
+    $('#speaker').click((e) => { 
+        if(playerOptionsMenuOpened) {
+            $('#player-options').remove();
+            $('#dashboard-row').css('margin-left', '0');
+        } else{
+            $('#dashboard-row').css('margin-left', '-50px');
+            $('#dashboard-row').append(`
+                <div id="player-options" 
+                    style="
+                        flex-grow:1;
+                        display:flex;
+                        align-items:center;
+                        justify-content: center;
+                        flex-direction:column;
+                        padding-top:0;
+                        padding-bottom:0;
+                    ">
+                        <div id="player-rw" class="card" style="flex-grow:1; text-align:center; padding-top:0;">
+                            <img width="32px" src="./../icons/music-rewind.png" />
+                        </div>
+                        <div id="player-play" class="card" style="flex-grow:1; text-align:center; padding-top:0;">
+                            <img id="player-play-img" width="32px" src="./../icons/music-play.png" />
+                        </div>
+                        <div id="player-fw" class="card" style="flex-grow:1; text-align:center; padding-top:0;">
+                            <img width="32px" src="./../../icons/music-forward.png" />
+                        </div>
+                </div>
+            `);
+        }
+        playerOptionsMenuOpened = !playerOptionsMenuOpened;
     });
 
-    $('#player-options').on('mouseout', (e) => {
-        $('#player-options').remove();
+    $('#dashboard-row').on('click', '#player-rw', function(e) {
+        console.log('rw');
     });
 
-    /*$('#speaker #player-options').mouseout((e) => {
-        $('#player-options').remove();
-    });*/
+    $('#dashboard-row').on('click', '#player-play', function(e) {
+        if(isPlaying) {
+            $('#player-play-img').attr('src', './../icons/music-play.png');
+        } else {
+            $('#player-play-img').attr('src', './../icons/music-pause.png');
+        }
+        isPlaying = !isPlaying;
+    });
 
+    $('#dashboard-row').on('click', '#player-fw', function(e) {
+        console.log('fw');
+    });
 
 });
