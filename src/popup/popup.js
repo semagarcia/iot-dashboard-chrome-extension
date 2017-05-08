@@ -8,7 +8,7 @@ $(document).ready(() => {
 
     console.log('>> ' + chrome.runtime.id);
 
-    fetch(`${server}/http-stream`)
+    fetch(`${server}/api/http-stream`)
         .then((response) => {
             let streamChunkExtractor = (reader) => {
                 return reader.read().then((result) => {
@@ -33,8 +33,17 @@ $(document).ready(() => {
         });
 
     updateDashboard = (backendInfo) => {
-        $('#light-label').text(backendInfo.sensors.light);
-        $('#temp-label').text(backendInfo.sensors.temperature);
+        $('#air-quality-label').text(backendInfo.sensors.airQualityValue);
+        $('#light-label').text(backendInfo.sensors.lightValue);
+        $('#temp-label').text(backendInfo.sensors.tempValue);
+        $('#terrarium-label').text(backendInfo.sensors.moistureValue);
+        $('#water-label').text(backendInfo.sensors.waterValue);
+
+        // Specific management for gas sensor
+        if(backendInfo.sensors.gasValue.gas)
+            $('#gas-label').text(backendInfo.sensors.gasValue.status);
+        else
+            $('#gas-label').text(backendInfo.sensors.gasValue.status);
     };
 
     $('#settings').click(() => {
